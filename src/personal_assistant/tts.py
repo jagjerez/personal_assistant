@@ -27,6 +27,12 @@ class TTS:
                     api_key=self.cfg.api_key,
                     model=self.cfg.elevenlabs_model,
                 )
+            elif engine_name == "openai":
+                from .tts_openai import OpenAITTSBackend
+                self._engines[engine_name] = OpenAITTSBackend(
+                    api_key=self.cfg.openai_api_key,
+                    model=self.cfg.openai_model,
+                )
             elif engine_name == "piper":
                 from .tts_piper import PiperBackend
                 self._engines[engine_name] = PiperBackend()

@@ -1,8 +1,9 @@
-"""Catálogo curado de voces (ElevenLabs + Piper) + descarga on-demand.
+"""Catálogo curado de voces (ElevenLabs + OpenAI + Piper) + descarga on-demand.
 
 Engines:
-- "elevenlabs": neural cloud. Mejor calidad. Necesita API key + plan Starter+.
-- "piper": local ligero (~60MB por voz). Voz robótica pero offline y gratis.
+- "elevenlabs": neural cloud, mejor calidad. Requiere plan Starter+ ($5/mes).
+- "openai": neural cloud, calidad casi igual. Pay-as-you-go (~$0.015/1k chars).
+- "piper": local ligero. Robótica pero offline y gratis.
 """
 from __future__ import annotations
 
@@ -50,6 +51,17 @@ VOICES: list[Voice] = [
     Voice("pNInz6obpgDQGcFmaJgB", "elevenlabs", "Adam — neural cloud (hombre)",    "*", "*", "M"),
     Voice("yoZ06aMxZJJ28mfd3POQ", "elevenlabs", "Sam — neural cloud (hombre)",     "*", "*", "M"),
 
+    # ───── OpenAI TTS (neural cloud, pay-as-you-go) ─────
+    Voice("nova",    "openai", "Nova — neural OpenAI (mujer, popular)",    "*", "*", "F"),
+    Voice("shimmer", "openai", "Shimmer — neural OpenAI (mujer suave)",    "*", "*", "F"),
+    Voice("alloy",   "openai", "Alloy — neural OpenAI (neutro)",           "*", "*", "F"),
+    Voice("coral",   "openai", "Coral — neural OpenAI (mujer cálida)",     "*", "*", "F"),
+    Voice("sage",    "openai", "Sage — neural OpenAI (mujer madura)",      "*", "*", "F"),
+    Voice("echo",    "openai", "Echo — neural OpenAI (hombre)",            "*", "*", "M"),
+    Voice("onyx",    "openai", "Onyx — neural OpenAI (hombre profundo)",   "*", "*", "M"),
+    Voice("fable",   "openai", "Fable — neural OpenAI (hombre británico)", "*", "*", "M"),
+    Voice("ash",     "openai", "Ash — neural OpenAI (hombre)",             "*", "*", "M"),
+
     # ───── PIPER (local ligero, fallback offline) ─────
     Voice("es_ES-sharvard-medium", "piper", "Sharvard (Mujer ES) — piper", "es", "es_ES", "F",
           "es/es_ES/sharvard/medium/es_ES-sharvard-medium"),
@@ -93,8 +105,8 @@ def piper_voice_path(voice_id: str) -> Path:
 
 
 def is_downloaded(voice: Voice) -> bool:
-    """ElevenLabs es cloud → siempre 'disponible'. Piper se valida fichero a fichero."""
-    if voice.engine == "elevenlabs":
+    """Cloud (elevenlabs, openai) → siempre disponible. Piper local."""
+    if voice.engine in ("elevenlabs", "openai"):
         return True
     p = piper_voice_path(voice.id)
     return p.exists() and p.with_suffix(".onnx.json").exists()
@@ -102,7 +114,7 @@ def is_downloaded(voice: Voice) -> bool:
 
 def download_voice(voice: Voice) -> None:
     """Descarga la voz si no está. Síncrono — usar desde QThread o run_in_executor."""
-    if voice.engine == "elevenlabs":
+    if voice.engine in ("elevenlabs", "openai"):
         return  # cloud, no hay nada que descargar
 
     target_dir = voice_dir()

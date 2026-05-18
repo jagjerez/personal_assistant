@@ -24,17 +24,20 @@ whisper:
 
 tts:
   # Motor TTS:
-  #   - elevenlabs → cloud, mejor calidad, streaming PCM nativo.
-  #     Requiere plan Starter+ ($5/mes) — el free tier no permite API a voces premade.
-  #     Crea tu key en https://elevenlabs.io con TODOS los permisos.
-  #     La key la pones en ~/.config/personal-assistant/secrets.env como:
-  #       ELEVENLABS_API_KEY=tu_clave_aqui
-  #     (NO la pongas en este fichero ni en git)
-  #   - piper → local, gratis, ligero. Voz robótica pero offline.
-  engine: elevenlabs
-  voice: 21m00Tcm4TlvDq8ikWAM    # Rachel — cambiable desde el menú
+  #   - openai → cloud, calidad excelente, pay-as-you-go (~$0.015 por 1000 chars).
+  #     Necesita OPENAI_API_KEY en ~/.config/personal-assistant/secrets.env.
+  #     Voces: nova, shimmer, alloy, coral, sage, echo, onyx, fable, ash.
+  #   - elevenlabs → cloud, top calidad. Requiere plan Starter+ ($5/mes).
+  #     Free tier NO funciona — la API rechaza voces premade.
+  #     Necesita ELEVENLABS_API_KEY en secrets.env.
+  #   - piper → local gratis. Voz robótica pero offline.
+  engine: openai
+  voice: nova
   speed: 1.0
+  # ElevenLabs config (engine=elevenlabs)
   elevenlabs_model: eleven_multilingual_v2
+  # OpenAI config (engine=openai)
+  openai_model: tts-1            # tts-1 rápido | tts-1-hd mejor calidad
 
 vad:
   # Sensibilidad: 0 (permisivo) a 3 (estricto).
