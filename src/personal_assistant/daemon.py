@@ -39,7 +39,7 @@ class Daemon:
 
         self.memory = Memory(cfg.paths.memory_file)
         self.stt = STT(cfg.whisper)
-        self.tts = TTS(cfg.piper)
+        self.tts = TTS(cfg.tts, language=cfg.claude.language)
 
         def rebuild_system_prompt() -> str:
             return build_system_prompt(
@@ -61,20 +61,19 @@ class Daemon:
 
     # ---- API pública usada desde Qt (thread principal) ----
 
-    def apply_voice(self, voice_path: Path) -> None:
-        """Cambia la voz Piper en caliente."""
+    def apply_voice(self, voice_id: str) -> None:
+        """Cambia la voz en caliente (cualquier engine)."""
         try:
-            self.tts.set_voice(voice_path)
-            log.info("Voz cambiada a %s", Path(voice_path).name)
+            self.tts.set_voice(voice_id)
         except Exception:
             log.exception("Error cambiando voz")
 
     def apply_language(self, language: str) -> None:
-        """Cambia el idioma de transcripción y la directiva de respuesta de Claude."""
+        """Cambia el idioma de transcripción, respuesta y TTS."""
         self.cfg.whisper.language = language
         self.cfg.claude.language = language
         self.stt.language = language
-        # Reconstruir system prompt para que Claude responda en ese idioma
+        self.tts.set_language(language)
         self.claude.system_prompt = self._rebuild_system_prompt()
         log.info("Idioma cambiado a %s", language)
 

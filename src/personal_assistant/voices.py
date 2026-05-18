@@ -1,6 +1,11 @@
-"""Catálogo curado de voces Piper + descarga on-demand.
+"""Catálogo curado de voces (XTTS-v2 y Piper) + descarga on-demand.
 
-URLs siguen el patrón de https://huggingface.co/rhasspy/piper-voices
+Engines:
+- "xtts": Coqui XTTS-v2 (~1.8GB). Multilingüe (16 idiomas), calidad casi humana.
+  Cada speaker habla CUALQUIER idioma: el lang se pasa en cada síntesis.
+  Soporta voice cloning con un wav de ~6s (no expuesto aún en UI).
+- "piper": modelo ligero (~60MB por voz). Calidad estable pero algo robótica.
+  Una voz = un idioma. Útil como fallback rápido.
 """
 from __future__ import annotations
 
@@ -16,64 +21,66 @@ PIPER_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
 @dataclass(frozen=True)
 class Voice:
-    id: str          # ej. "es_ES-sharvard-medium"
-    name: str        # nombre amigable para UI
-    lang: str        # "es", "en"
-    locale: str      # "es_ES", "en_US", "en_GB"
+    id: str          # ID interno (XTTS: nombre speaker, Piper: nombre modelo)
+    engine: str      # "xtts" | "piper"
+    name: str
+    lang: str        # "es", "en", "*" para multilingüe
+    locale: str      # "es_ES", "en_US", "*"
     gender: str      # "F" | "M"
-    rel_path: str    # ruta relativa bajo PIPER_BASE (sin .onnx)
+    rel_path: str = ""   # sólo Piper: ruta relativa bajo PIPER_BASE
 
     @property
-    def onnx_url(self) -> str:
+    def piper_onnx_url(self) -> str:
         return f"{PIPER_BASE}/{self.rel_path}.onnx"
 
     @property
-    def json_url(self) -> str:
+    def piper_json_url(self) -> str:
         return f"{PIPER_BASE}/{self.rel_path}.onnx.json"
 
 
-# Catálogo curado — voces que sé que existen en piper-voices con buena calidad.
+# Catálogo curado. XTTS speakers son multilingües; Piper son por idioma.
 VOICES: list[Voice] = [
-    # Español de España
-    Voice("es_ES-sharvard-medium", "Sharvard (Mujer ES)", "es", "es_ES", "F",
+    # ───── XTTS-v2 (neural, multilingüe) ─────
+    # Mujeres
+    Voice("Ana Florence",     "xtts", "Ana Florence — neural multilingüe",     "*", "*", "F"),
+    Voice("Sofia Hellen",     "xtts", "Sofia Hellen — neural multilingüe",     "*", "*", "F"),
+    Voice("Daisy Studious",   "xtts", "Daisy Studious — neural multilingüe",   "*", "*", "F"),
+    Voice("Claribel Dervla",  "xtts", "Claribel Dervla — neural multilingüe",  "*", "*", "F"),
+    Voice("Alison Dietlinde", "xtts", "Alison Dietlinde — neural multilingüe", "*", "*", "F"),
+    Voice("Annmarie Nele",    "xtts", "Annmarie Nele — neural multilingüe",    "*", "*", "F"),
+    Voice("Tammie Ema",       "xtts", "Tammie Ema — neural multilingüe",       "*", "*", "F"),
+    # Hombres
+    Voice("Damien Black",     "xtts", "Damien Black — neural multilingüe",     "*", "*", "M"),
+    Voice("Royston Min",      "xtts", "Royston Min — neural multilingüe",      "*", "*", "M"),
+    Voice("Andrew Chipper",   "xtts", "Andrew Chipper — neural multilingüe",   "*", "*", "M"),
+    Voice("Viktor Eka",       "xtts", "Viktor Eka — neural multilingüe",       "*", "*", "M"),
+    Voice("Gilberto Mathias", "xtts", "Gilberto Mathias — neural multilingüe", "*", "*", "M"),
+
+    # ───── PIPER (ligero, fallback) ─────
+    Voice("es_ES-sharvard-medium", "piper", "Sharvard (Mujer ES) — piper", "es", "es_ES", "F",
           "es/es_ES/sharvard/medium/es_ES-sharvard-medium"),
-    Voice("es_ES-mls_9972-low",    "MLS (Mujer ES, voz natural)", "es", "es_ES", "F",
+    Voice("es_ES-mls_9972-low",    "piper", "MLS (Mujer ES) — piper", "es", "es_ES", "F",
           "es/es_ES/mls_9972/low/es_ES-mls_9972-low"),
-    Voice("es_ES-davefx-medium",   "Davefx (Hombre ES)", "es", "es_ES", "M",
+    Voice("es_ES-davefx-medium",   "piper", "Davefx (Hombre ES) — piper", "es", "es_ES", "M",
           "es/es_ES/davefx/medium/es_ES-davefx-medium"),
-    Voice("es_ES-carlfm-x_low",    "Carlfm (Hombre ES, rápido)", "es", "es_ES", "M",
-          "es/es_ES/carlfm/x_low/es_ES-carlfm-x_low"),
-    # Español de México
-    Voice("es_MX-claude-high",     "Claude (Hombre MX, alta calidad)", "es", "es_MX", "M",
-          "es/es_MX/claude/high/es_MX-claude-high"),
-    Voice("es_MX-ald-medium",      "Ald (Hombre MX)", "es", "es_MX", "M",
-          "es/es_MX/ald/medium/es_MX-ald-medium"),
-    # Inglés US
-    Voice("en_US-amy-medium",      "Amy (Mujer EN-US)", "en", "en_US", "F",
+    Voice("en_US-amy-medium",      "piper", "Amy (Mujer EN-US) — piper", "en", "en_US", "F",
           "en/en_US/amy/medium/en_US-amy-medium"),
-    Voice("en_US-hfc_female-medium", "HFC (Mujer EN-US)", "en", "en_US", "F",
+    Voice("en_US-hfc_female-medium","piper", "HFC (Mujer EN-US) — piper", "en", "en_US", "F",
           "en/en_US/hfc_female/medium/en_US-hfc_female-medium"),
-    Voice("en_US-lessac-medium",   "Lessac (Mujer EN-US)", "en", "en_US", "F",
-          "en/en_US/lessac/medium/en_US-lessac-medium"),
-    Voice("en_US-ryan-high",       "Ryan (Hombre EN-US)", "en", "en_US", "M",
+    Voice("en_US-ryan-high",       "piper", "Ryan (Hombre EN-US) — piper", "en", "en_US", "M",
           "en/en_US/ryan/high/en_US-ryan-high"),
-    # Inglés UK
-    Voice("en_GB-jenny_dioco-medium", "Jenny (Mujer EN-GB)", "en", "en_GB", "F",
-          "en/en_GB/jenny_dioco/medium/en_GB-jenny_dioco-medium"),
-    Voice("en_GB-alan-medium",     "Alan (Hombre EN-GB)", "en", "en_GB", "M",
-          "en/en_GB/alan/medium/en_GB-alan-medium"),
 ]
 
 
-# Frases de demo por idioma — el usuario las oye en el menú de selección.
 DEMO_TEXTS = {
     "es": "Hola. Soy tu asistente personal por voz. Pulsa Super equis para empezar a hablar conmigo.",
-    "en": "Hi. I'm your voice assistant. Press Super X to start talking with me.",
+    "en": "Hi. I'm your personal voice assistant. Press Super X to start talking with me.",
 }
 
 
 def voices_for_language(lang: str) -> list[Voice]:
-    return [v for v in VOICES if v.lang == lang]
+    """Voces compatibles con un idioma. XTTS (lang='*') aparece en todos."""
+    return [v for v in VOICES if v.lang == lang or v.lang == "*"]
 
 
 def get_voice(voice_id: str) -> Voice | None:
@@ -87,33 +94,36 @@ def voice_dir() -> Path:
     return Path("~/.local/share/personal-assistant/voices").expanduser()
 
 
-def voice_path(voice_id: str) -> Path:
+def piper_voice_path(voice_id: str) -> Path:
     return voice_dir() / f"{voice_id}.onnx"
 
 
-def is_downloaded(voice_id: str) -> bool:
-    p = voice_path(voice_id)
+def is_downloaded(voice: Voice) -> bool:
+    """XTTS asume bundle ya descargado. Piper se valida fichero a fichero."""
+    if voice.engine == "xtts":
+        from .tts_xtts import is_xtts_downloaded
+        return is_xtts_downloaded()
+    p = piper_voice_path(voice.id)
     return p.exists() and p.with_suffix(".onnx.json").exists()
 
 
-def download_voice(voice: Voice) -> Path:
-    """Descarga la voz si no está en local. Devuelve la ruta del .onnx.
+def download_voice(voice: Voice) -> None:
+    """Descarga la voz si no está. Síncrono — usar desde QThread o run_in_executor."""
+    if voice.engine == "xtts":
+        from .tts_xtts import ensure_xtts_model
+        ensure_xtts_model()
+        return
 
-    Síncrono — no llamar desde el thread Qt directamente, usar QThread o run_in_executor.
-    """
     target_dir = voice_dir()
     target_dir.mkdir(parents=True, exist_ok=True)
     onnx = target_dir / f"{voice.id}.onnx"
     meta = target_dir / f"{voice.id}.onnx.json"
-
     if onnx.exists() and meta.exists():
-        return onnx
-
-    log.info("Descargando voz %s desde HuggingFace...", voice.id)
-    for url, dst in ((voice.onnx_url, onnx), (voice.json_url, meta)):
+        return
+    log.info("Descargando voz Piper %s...", voice.id)
+    for url, dst in ((voice.piper_onnx_url, onnx), (voice.piper_json_url, meta)):
         log.info("  ↳ %s", url)
         tmp = dst.with_suffix(dst.suffix + ".part")
         urllib.request.urlretrieve(url, tmp)
         tmp.rename(dst)
-    log.info("Voz %s descargada", voice.id)
-    return onnx
+    log.info("Voz Piper %s descargada", voice.id)

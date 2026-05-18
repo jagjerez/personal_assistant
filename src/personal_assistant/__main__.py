@@ -20,6 +20,9 @@ from pathlib import Path
 if os.environ.get("XDG_SESSION_TYPE") == "wayland":
     os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
 
+# Acepta la licencia CPML de XTTS-v2 sin prompt interactivo.
+os.environ.setdefault("COQUI_TOS_AGREED", "1")
+
 # Silencia warnings ruidosos de Qt (antes del primer import de PySide6).
 os.environ.setdefault(
     "QT_LOGGING_RULES",
@@ -57,11 +60,15 @@ def _setup_logging(log_dir: Path, verbose: bool) -> None:
 def _save_config(cfg_path: Path, language: str, voice_id: str) -> None:
     """Persiste idioma + voz seleccionados en config.yaml."""
     import yaml
-    from .voices import voice_path as voice_file
+    from .voices import get_voice
+    voice = get_voice(voice_id)
     data = yaml.safe_load(cfg_path.read_text()) or {}
     data.setdefault("whisper", {})["language"] = language
     data.setdefault("claude", {})["language"] = language
-    data.setdefault("piper", {})["voice_path"] = str(voice_file(voice_id))
+    tts = data.setdefault("tts", {})
+    tts["voice"] = voice_id
+    if voice is not None:
+        tts["engine"] = voice.engine
     cfg_path.write_text(yaml.safe_dump(data, allow_unicode=True, sort_keys=False))
 
 
@@ -104,7 +111,6 @@ def cli() -> None:
     if use_overlay:
         from .indicator import Overlay, create_app
         from .menu import SettingsDialog
-        from .voices import voice_path as voice_file
 
         app = create_app()
         overlay = Overlay(cfg.overlay)
@@ -113,18 +119,16 @@ def cli() -> None:
         signal.signal(signal.SIGTERM, signal.SIG_DFL)
 
         daemon = Daemon(cfg, indicator=overlay)
-
-        # Localiza voice_id a partir del voice_path actual
-        current_voice_id = Path(cfg.piper.voice_path).stem
+        current_voice_id = cfg.tts.voice
 
         def open_settings():
-            def play_demo(text: str, vp: Path) -> None:
-                daemon.tts.play_demo(text, vp)
+            def play_demo(text: str, voice_id: str) -> None:
+                daemon.tts.play_demo(text, voice_id, language=cfg.claude.language)
 
             def on_save(language: str, voice_id: str) -> None:
                 _save_config(args.config, language, voice_id)
                 daemon.apply_language(language)
-                daemon.apply_voice(voice_file(voice_id))
+                daemon.apply_voice(voice_id)
                 nonlocal current_voice_id
                 current_voice_id = voice_id
 

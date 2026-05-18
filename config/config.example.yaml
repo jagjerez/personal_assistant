@@ -24,12 +24,19 @@ whisper:
   device: cpu
   compute_type: int8
 
-piper:
-  # Ruta al modelo de voz .onnx. Por defecto sharvard (mujer ES).
-  # Cambia desde el menú del asistente (clic en la barra) o aquí a mano.
-  voice_path: ~/.local/share/personal-assistant/voices/es_ES-sharvard-medium.onnx
-  # Velocidad de habla (1.0 = normal, <1 más rápido, >1 más lento)
-  length_scale: 1.0
+tts:
+  # Motor TTS:
+  #   - xtts  → Coqui XTTS-v2 neural. Calidad casi humana, multilingüe. ~1.8GB,
+  #             más lento (1-3s GPU / 5-10s CPU para 3s de audio).
+  #   - piper → ligero (~60MB/voz), rápido (<1s), pero algo robótico.
+  engine: xtts
+  # ID del speaker en el catálogo (src/personal_assistant/voices.py).
+  # Cambiable desde el menú del asistente (clic en la barra) sin reiniciar.
+  voice: Ana Florence
+  # Device de XTTS (cuda | cpu). Piper ignora este flag.
+  device: cuda
+  # 1.0 normal, <1.0 más rápido, >1.0 más lento.
+  speed: 1.0
 
 vad:
   # Sensibilidad: 0 (permisivo) a 3 (estricto).

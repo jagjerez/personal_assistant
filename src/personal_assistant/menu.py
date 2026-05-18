@@ -26,7 +26,6 @@ from .voices import (
     Voice,
     download_voice,
     is_downloaded,
-    voice_path,
     voices_for_language,
 )
 
@@ -52,9 +51,9 @@ class _VoiceJob(QObject):
     @Slot()
     def run(self) -> None:
         try:
-            if not is_downloaded(self.voice.id):
+            if not is_downloaded(self.voice):
                 download_voice(self.voice)
-            self.play_func(self.demo_text, voice_path(self.voice.id))
+            self.play_func(self.demo_text, self.voice.id)
             self.finished.emit(self.voice.id, True, "")
         except Exception as e:
             log.exception("Error en demo de voz")
@@ -68,7 +67,7 @@ class SettingsDialog(QDialog):
         self,
         current_language: str,
         current_voice_id: str,
-        play_demo: Callable[[str, Path], None],
+        play_demo: Callable[[str, str], None],
         on_save: Callable[[str, str], None],
         parent: Optional[QWidget] = None,
     ):
@@ -152,7 +151,7 @@ class SettingsDialog(QDialog):
         row.setContentsMargins(6, 4, 6, 4)
 
         gender_emoji = "♀" if voice.gender == "F" else "♂"
-        downloaded = "✓" if is_downloaded(voice.id) else "↓"
+        downloaded = "✓" if is_downloaded(voice) else "↓"
         label = QLabel(f"{gender_emoji}  {voice.name}   [{downloaded}]")
         f = label.font(); f.setPointSize(10); label.setFont(f)
         row.addWidget(label, 1)
@@ -183,7 +182,7 @@ class SettingsDialog(QDialog):
         btn.setEnabled(False)
         btn.setText("…")
         self.status_label.setText(
-            f"Descargando {voice.name}..." if not is_downloaded(voice.id)
+            f"Descargando {voice.name}..." if not is_downloaded(voice)
             else f"Sintetizando demo en {voice.name}..."
         )
         lang = self.lang_combo.currentData()

@@ -22,14 +22,12 @@ class WhisperConfig(BaseModel):
     compute_type: str = "int8"     # int8 (cpu), float16 (gpu), float32
 
 
-class PiperConfig(BaseModel):
-    voice_path: Path
-    length_scale: float = 1.0
-
-    @field_validator("voice_path", mode="before")
-    @classmethod
-    def _expand_path(cls, v):
-        return _expand(v)
+class TTSConfig(BaseModel):
+    """Configuración del motor de TTS (engine-agnostic)."""
+    engine: str = "xtts"        # "xtts" | "piper"
+    voice: str = "Ana Florence"  # ID del catálogo voices.py
+    device: str = "cuda"         # cuda | cpu (sólo relevante para xtts)
+    speed: float = 1.0           # 1.0 normal, <1 más rápido, >1 más lento
 
 
 class VADConfig(BaseModel):
@@ -80,7 +78,7 @@ class OverlayConfig(BaseModel):
 class Config(BaseModel):
     hotkey: HotkeyConfig = HotkeyConfig()
     whisper: WhisperConfig = WhisperConfig()
-    piper: PiperConfig
+    tts: TTSConfig = TTSConfig()
     vad: VADConfig = VADConfig()
     claude: ClaudeConfig = ClaudeConfig()
     paths: PathsConfig
