@@ -18,7 +18,9 @@ echo
 # 1) Comprobar dependencias del sistema
 bold "[1/6] Dependencias del sistema"
 NEEDED_APT=()
-for pkg in portaudio19-dev ffmpeg curl; do
+# portaudio: sounddevice. ffmpeg: whisper. libxcb-cursor0: Qt 6.5+ XCB plugin
+# (necesario en Wayland porque forzamos XWayland para posicionamiento).
+for pkg in portaudio19-dev ffmpeg curl libxcb-cursor0; do
   if ! dpkg -s "$pkg" >/dev/null 2>&1; then
     NEEDED_APT+=("$pkg")
   fi
