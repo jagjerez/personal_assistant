@@ -76,12 +76,15 @@ audio:
   beep: true
 
 overlay:
-  # Barra flotante con animaciones de estado (mic / thinking / waveform).
+  # Overlay minimalista. Sin fondo. Iconos en un solo color.
   enabled: true
   # Margen desde el borde inferior de la pantalla, en píxeles.
-  margin_bottom: 60
-  # Anchura y altura de la barra.
-  width: 320
-  height: 70
-  # Opacidad (0.0 transparente, 1.0 opaco).
-  opacity: 0.92
+  margin_bottom: 24
+  # Tamaño del área donde se dibujan los iconos.
+  width: 140
+  height: 36
+  opacity: 1.0
+  # Color RGB de los iconos (mismo para todos los estados).
+  color_r: 230
+  color_g: 230
+  color_b: 240

@@ -1,11 +1,10 @@
-"""Overlay flotante con idle bar siempre visible + transiciones morfantes.
+"""Overlay flotante minimalista.
 
-La barra vive en bottom-center y nunca se oculta. Cambia de forma cuando el
-asistente pasa de estado: idle (barrita fina) → recording (mic + audio bars)
-→ thinking (3 puntos) → speaking (onda) → idle.
-
-Las transiciones se cross-fadean con easing InOutCubic. El bg de la píldora
-también se interpola: muy translúcido en idle, opaco en estados activos.
+- Sin fondo. Sólo los iconos en el mismo color para todos los estados.
+- Tamaño reducido (~140x36 px por defecto).
+- Transiciones "morph through center": el icono anterior se contrae al
+  punto central mientras se desvanece, y el nuevo crece desde el centro.
+  Visualmente parece que uno se transforma en otro.
 """
 from __future__ import annotations
 
@@ -43,16 +42,14 @@ class Overlay(QWidget):
     def __init__(self, cfg: OverlayConfig, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.cfg = cfg
+        self._fg = (cfg.color_r, cfg.color_g, cfg.color_b)
         self._state = STATE_IDLE
         self._prev_state = STATE_IDLE
-        self._transition = 1.0  # 1.0 = totalmente en el estado actual
+        self._transition = 1.0
         self._audio_level = 0.0
         self._target_level = 0.0
         self._phase = 0.0
 
-        # Ventana siempre visible, sin foco, encima de todo.
-        # OJO: NO usamos WA_TransparentForMouseEvents → queremos clicks para abrir menú.
-        # X11Bypass + Tool + StaysOnTop = el WM no lo reordena ni añade decoración.
         self.setWindowFlags(
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
@@ -67,26 +64,21 @@ class Overlay(QWidget):
         self.resize(cfg.width, cfg.height)
         self._position_bottom_center()
 
-        # Slots thread-safe (auto-queued cross-thread)
         self.sig_state.connect(self._on_state)
         self.sig_level.connect(self._on_level)
 
-        # Ticker animación 30 fps
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.setInterval(33)
         self._timer.start()
 
-        # Re-raise periódico: algunos compositores nos pierden el always-on-top
-        # cuando lanzan una ventana fullscreen o cambian de workspace.
         self._raise_timer = QTimer(self)
         self._raise_timer.timeout.connect(self._ensure_on_top)
         self._raise_timer.setInterval(2000)
         self._raise_timer.start()
 
-        # Animación de transición entre estados
         self._trans_anim = QPropertyAnimation(self, b"transition")
-        self._trans_anim.setDuration(380)
+        self._trans_anim.setDuration(420)
         self._trans_anim.setEasingCurve(QEasingCurve.InOutCubic)
 
         self.show()
@@ -121,7 +113,6 @@ class Overlay(QWidget):
             return
         self._prev_state = self._state
         self._state = new_state
-        # Cuando volvemos a idle, dejamos que el nivel se desvanezca solo
         if new_state == STATE_IDLE:
             self._target_level = 0.0
         self._trans_anim.stop()
@@ -133,155 +124,148 @@ class Overlay(QWidget):
     def _on_level(self, level: float) -> None:
         self._target_level = max(0.0, min(1.0, level))
 
-    def _ensure_on_top(self) -> None:
-        """Reposiciona y eleva la ventana periódicamente."""
-        if not self.isVisible():
-            self.show()
-        self._position_bottom_center()
-        self.raise_()
-
     def _tick(self) -> None:
         self._phase += 0.06
         self._audio_level = self._audio_level * 0.6 + self._target_level * 0.4
         self.update()
 
+    def _ensure_on_top(self) -> None:
+        if not self.isVisible():
+            self.show()
+        self._position_bottom_center()
+        self.raise_()
+
     # ---- Mouse ----
 
     def mousePressEvent(self, event):
-        # Cualquier botón abre el menú. Sólo dispara cuando estamos en idle
-        # para no interrumpir grabación/conversación.
         if self._state == STATE_IDLE:
             self.sig_menu_requested.emit()
         event.accept()
 
     # ---- Pintado ----
 
-    def _bg_alpha_for(self, state: str) -> int:
-        return 60 if state == STATE_IDLE else 235
+    @staticmethod
+    def _a(base: int, mul: float) -> int:
+        return max(0, min(255, int(base * mul)))
+
+    def _color(self, base: int, mul: float) -> QColor:
+        return QColor(self._fg[0], self._fg[1], self._fg[2], self._a(base, mul))
 
     def paintEvent(self, _event) -> None:
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing, True)
         rect = self.rect()
-        radius = rect.height() / 2
 
-        # Fondo píldora: alpha interpolado entre estado anterior y actual
+        # SIN FONDO. Sólo iconos.
         t = self._transition
-        prev_a = self._bg_alpha_for(self._prev_state)
-        curr_a = self._bg_alpha_for(self._state)
-        bg_alpha = int(prev_a + (curr_a - prev_a) * t)
 
-        p.setPen(Qt.NoPen)
-        p.setBrush(QColor(18, 18, 22, bg_alpha))
-        p.drawRoundedRect(rect, radius, radius)
-        p.setPen(QPen(QColor(255, 255, 255, max(8, bg_alpha // 9)), 1))
-        p.setBrush(Qt.NoBrush)
-        p.drawRoundedRect(
-            QRectF(0.5, 0.5, rect.width() - 1, rect.height() - 1),
-            radius - 0.5, radius - 0.5,
-        )
-
-        # Dos capas: estado anterior (fade out) + estado actual (fade in)
         if t < 1.0 and self._prev_state != self._state:
-            self._draw_state(p, rect, self._prev_state, 1.0 - t)
-        self._draw_state(p, rect, self._state, t if self._prev_state != self._state else 1.0)
+            # Estado anterior: encoge hacia el centro y se desvanece.
+            self._draw_morphed(p, rect, self._prev_state, scale=1.0 - t, alpha=1.0 - t)
+            # Estado nuevo: emerge desde el centro creciendo y apareciendo.
+            self._draw_morphed(p, rect, self._state, scale=t, alpha=t)
+        else:
+            # Sin transición — estado actual a tamaño completo.
+            self._draw_morphed(p, rect, self._state, scale=1.0, alpha=1.0)
 
-    def _draw_state(self, p: QPainter, rect: QRectF, state: str, alpha_mul: float) -> None:
-        if alpha_mul <= 0.01:
+    def _draw_morphed(
+        self, p: QPainter, rect: QRectF, state: str, scale: float, alpha: float
+    ) -> None:
+        if alpha <= 0.01 or scale <= 0.01:
             return
-        if state == STATE_IDLE:
-            self._draw_idle(p, rect, alpha_mul)
-        elif state == STATE_RECORDING:
-            self._draw_recording(p, rect, alpha_mul)
-        elif state == STATE_THINKING:
-            self._draw_thinking(p, rect, alpha_mul)
-        elif state == STATE_SPEAKING:
-            self._draw_speaking(p, rect, alpha_mul)
-
-    @staticmethod
-    def _a(base: int, mul: float) -> int:
-        return max(0, min(255, int(base * mul)))
-
-    # --- IDLE: barrita fina centrada con un sutil shimmer ---
-    def _draw_idle(self, p: QPainter, rect: QRectF, mul: float) -> None:
+        p.save()
         cx = rect.width() / 2
         cy = rect.height() / 2
-        # shimmer suave: el ancho oscila ligeramente
-        w_base = 64
-        w = w_base + 8 * math.sin(self._phase * 1.2)
-        h = 3
-        # alpha también respira un poco
+        p.translate(cx, cy)
+        p.scale(scale, scale)
+        p.translate(-cx, -cy)
+        if state == STATE_IDLE:
+            self._draw_idle(p, rect, alpha)
+        elif state == STATE_RECORDING:
+            self._draw_recording(p, rect, alpha)
+        elif state == STATE_THINKING:
+            self._draw_thinking(p, rect, alpha)
+        elif state == STATE_SPEAKING:
+            self._draw_speaking(p, rect, alpha)
+        p.restore()
+
+    # --- IDLE: una raya centrada con micro-respiración ---
+    def _draw_idle(self, p: QPainter, rect: QRectF, alpha: float) -> None:
+        cx = rect.width() / 2
+        cy = rect.height() / 2
+        w = 36 + 4 * math.sin(self._phase * 1.2)
+        h = 2.5
         breathe = 0.5 + 0.5 * math.sin(self._phase * 0.7)
-        a = int(120 + 50 * breathe)
+        a = int(180 + 60 * breathe)
         p.setPen(Qt.NoPen)
-        p.setBrush(QColor(220, 220, 230, self._a(a, mul)))
+        p.setBrush(self._color(a, alpha))
         p.drawRoundedRect(QRectF(cx - w / 2, cy - h / 2, w, h), h / 2, h / 2)
 
-    # --- RECORDING: mic a la izquierda + barras reactivas ---
-    def _draw_recording(self, p: QPainter, rect: QRectF, mul: float) -> None:
-        h = rect.height()
-        cx = h * 0.6
-        cy = h / 2
-        mic_color = QColor(255, 90, 90, self._a(255, mul))
-        p.setPen(Qt.NoPen)
-        p.setBrush(mic_color)
-        mic_w, mic_h = 14, 22
-        p.drawRoundedRect(QRectF(cx - mic_w / 2, cy - mic_h / 2 - 2, mic_w, mic_h), 7, 7)
-        p.setPen(QPen(mic_color, 2))
-        p.drawArc(QRectF(cx - 11, cy - 4, 22, 18), 200 * 16, 140 * 16)
-        p.drawLine(int(cx), int(cy + 13), int(cx), int(cy + 19))
-        p.drawLine(int(cx - 6), int(cy + 19), int(cx + 6), int(cy + 19))
+    # --- RECORDING: micro centrado que pulsa con el audio ---
+    def _draw_recording(self, p: QPainter, rect: QRectF, alpha: float) -> None:
+        cx = rect.width() / 2
+        cy = rect.height() / 2
+        # Escala global con el nivel de audio (efecto pulse).
+        pulse = 1.0 + 0.25 * self._audio_level
+        mic_w = 9 * pulse
+        mic_h = 13 * pulse
 
-        # Pulso reactivo al audio
-        pulse_r = 18 + self._audio_level * 14
+        color = self._color(255, alpha)
         p.setPen(Qt.NoPen)
-        p.setBrush(QColor(255, 90, 90, self._a(int(40 + 60 * self._audio_level), mul)))
-        p.drawEllipse(QPointF(cx, cy), pulse_r, pulse_r)
-
-        # Barras audio-reactivas a la derecha
-        p.setBrush(QColor(255, 130, 130, self._a(255, mul)))
-        n = 14
-        start_x = h * 1.2
-        end_x = rect.width() - h * 0.4
-        spacing = (end_x - start_x) / (n - 1)
-        for i in range(n):
-            x = start_x + i * spacing
-            phase = self._phase * 4 + i * 0.55
-            base = 6 + 10 * self._audio_level
-            wave = max(4, base + 14 * self._audio_level * (0.5 + 0.5 * math.sin(phase)))
-            p.drawRoundedRect(QRectF(x - 2, cy - wave / 2, 4, wave), 2, 2)
+        p.setBrush(color)
+        # Cápsula del mic
+        p.drawRoundedRect(
+            QRectF(cx - mic_w / 2, cy - mic_h / 2 - 1, mic_w, mic_h),
+            mic_w / 2, mic_w / 2,
+        )
+        # Arco U alrededor
+        p.setPen(QPen(color, 1.4))
+        p.setBrush(Qt.NoBrush)
+        arc_w = mic_w + 8
+        arc_h = mic_h
+        p.drawArc(
+            QRectF(cx - arc_w / 2, cy - 1, arc_w, arc_h - 1),
+            200 * 16, 140 * 16,
+        )
+        # Tallo y base
+        p.setPen(QPen(color, 1.4))
+        stem_y0 = cy + mic_h / 2 - 1
+        stem_y1 = cy + mic_h / 2 + 4
+        p.drawLine(QPointF(cx, stem_y0), QPointF(cx, stem_y1))
+        p.drawLine(QPointF(cx - 4, stem_y1), QPointF(cx + 4, stem_y1))
 
     # --- THINKING: 3 puntos rebotando ---
-    def _draw_thinking(self, p: QPainter, rect: QRectF, mul: float) -> None:
+    def _draw_thinking(self, p: QPainter, rect: QRectF, alpha: float) -> None:
         cx = rect.width() / 2
         cy = rect.height() / 2
         p.setPen(Qt.NoPen)
+        spacing = 12
         for i in range(3):
             t = self._phase * 3 - i * 0.5
-            y_off = -abs(math.sin(t)) * 10
-            alpha = int(180 + 75 * abs(math.sin(t)))
-            p.setBrush(QColor(255, 200, 80, self._a(alpha, mul)))
-            x = cx - 26 + i * 26
-            r = 6 + abs(math.sin(t)) * 1.5
+            y_off = -abs(math.sin(t)) * 5
+            a = int(180 + 75 * abs(math.sin(t)))
+            p.setBrush(self._color(a, alpha))
+            x = cx - spacing + i * spacing
+            r = 3.0 + abs(math.sin(t)) * 0.8
             p.drawEllipse(QPointF(x, cy + y_off), r, r)
 
-    # --- SPEAKING: onda simétrica centrada ---
-    def _draw_speaking(self, p: QPainter, rect: QRectF, mul: float) -> None:
+    # --- SPEAKING: 8 barras en envelope gaussiano ---
+    def _draw_speaking(self, p: QPainter, rect: QRectF, alpha: float) -> None:
         cx = rect.width() / 2
         cy = rect.height() / 2
         p.setPen(Qt.NoPen)
-        n = 22
-        bar_w = 4
-        spacing = 9
+        n = 9
+        bar_w = 2.6
+        spacing = 6.5
         start_x = cx - (n - 1) * spacing / 2
         for i in range(n):
             x = start_x + i * spacing
             d = (i - n / 2) / (n / 2)
             envelope = math.exp(-d * d * 1.8)
-            phase = self._phase * 6 + i * 0.35
-            wave_h = max(4, (8 + 22 * envelope) * (0.55 + 0.45 * math.sin(phase)))
-            p.setBrush(QColor(120, 220, 160, self._a(240, mul)))
-            p.drawRoundedRect(QRectF(x - bar_w / 2, cy - wave_h / 2, bar_w, wave_h), 2, 2)
+            phase = self._phase * 6 + i * 0.4
+            h = max(3, (3 + 13 * envelope) * (0.55 + 0.45 * math.sin(phase)))
+            p.setBrush(self._color(240, alpha))
+            p.drawRoundedRect(QRectF(x - bar_w / 2, cy - h / 2, bar_w, h), 1.3, 1.3)
 
 
 def create_app() -> QApplication:

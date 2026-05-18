@@ -69,10 +69,14 @@ class AudioConfig(BaseModel):
 
 class OverlayConfig(BaseModel):
     enabled: bool = True
-    margin_bottom: int = 60
-    width: int = 320
-    height: int = 70
-    opacity: float = Field(0.92, ge=0.0, le=1.0)
+    margin_bottom: int = 24
+    width: int = 140
+    height: int = 36
+    opacity: float = Field(1.0, ge=0.0, le=1.0)
+    # Color RGB de los iconos (mismo para todos los estados).
+    color_r: int = 230
+    color_g: int = 230
+    color_b: int = 240
 
 
 class Config(BaseModel):
