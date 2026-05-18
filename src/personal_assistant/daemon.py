@@ -58,6 +58,7 @@ class Daemon:
 
         self._pipeline_task: Optional[asyncio.Task] = None
         self._cancel_event = asyncio.Event()
+        self._stop_event = asyncio.Event()
 
     # ---- API pública usada desde Qt (thread principal) ----
 
@@ -97,9 +98,14 @@ class Daemon:
     async def _on_hotkey(self) -> None:
         if self.state == State.IDLE:
             self._cancel_event = asyncio.Event()
+            self._stop_event = asyncio.Event()
             self._pipeline_task = asyncio.create_task(self._pipeline())
-        else:
-            log.info("Hotkey en estado %s — cancelando", self.state.value)
+        elif self.state == State.RECORDING:
+            # Parar grabación graciosamente y procesar lo grabado.
+            log.info("Hotkey en RECORDING — terminando grabación y procesando")
+            self._stop_event.set()
+        else:  # PROCESSING o SPEAKING → cancelar todo
+            log.info("Hotkey en %s — cancelando", self.state.value)
             self._cancel_event.set()
             if self._pipeline_task and not self._pipeline_task.done():
                 self._pipeline_task.cancel()
@@ -113,7 +119,10 @@ class Daemon:
                 play_beep(880, 60)
             log.info("Grabando...")
             wav = await record_until_silence(
-                self.cfg.vad, self._cancel_event, on_level=self._push_level
+                self.cfg.vad,
+                cancel_event=self._cancel_event,
+                stop_event=self._stop_event,
+                on_level=self._push_level,
             )
             if self.cfg.audio.beep:
                 play_beep(660, 60)

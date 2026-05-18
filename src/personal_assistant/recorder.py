@@ -20,9 +20,15 @@ FRAME_MS = 30
 async def record_until_silence(
     cfg: VADConfig,
     cancel_event: Optional[asyncio.Event] = None,
+    stop_event: Optional[asyncio.Event] = None,
     on_level: Optional[Callable[[float], None]] = None,
 ) -> Optional[bytes]:
-    """Graba hasta detectar `silence_duration_ms` de silencio tras haber detectado habla.
+    """Graba hasta detectar silencio, cancelación o stop manual.
+
+    Tres formas de terminar:
+    - `cfg.silence_duration_ms` ms de silencio tras detectar habla → procesa.
+    - `stop_event` puesto por el usuario (segundo Super+X) → procesa lo grabado.
+    - `cancel_event` puesto por el usuario → descarta (devuelve None).
 
     Devuelve bytes WAV (mono, int16, 16 kHz) o None si fue cancelado o no hubo habla.
     """
@@ -58,6 +64,9 @@ async def record_until_silence(
             if cancel_event and cancel_event.is_set():
                 log.info("Grabación cancelada por usuario")
                 return None
+            if stop_event and stop_event.is_set():
+                log.info("Parada manual por hotkey — procesando lo grabado")
+                break
             try:
                 frame = await asyncio.wait_for(queue.get(), timeout=0.5)
             except asyncio.TimeoutError:
