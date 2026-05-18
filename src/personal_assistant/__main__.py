@@ -53,6 +53,11 @@ def _setup_logging(log_dir: Path, verbose: bool) -> None:
     for noisy in (
         "faster_whisper", "httpx", "httpcore", "httpcore.http11", "httpcore.connection",
         "urllib3", "filelock", "huggingface_hub", "hf_hub", "asyncio",
+        # coqui-tts arrastra numba/matplotlib/fsspec/torio que escupen MUCHO debug
+        "numba", "numba.core", "numba.core.byteflow", "numba.core.interpreter",
+        "matplotlib", "matplotlib.font_manager", "matplotlib.pyplot",
+        "fsspec", "fsspec.local", "fsspec.http",
+        "torio", "torio._extension", "TTS",
     ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
