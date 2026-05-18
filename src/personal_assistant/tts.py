@@ -27,9 +27,6 @@ class TTS:
                     api_key=self.cfg.api_key,
                     model=self.cfg.elevenlabs_model,
                 )
-            elif engine_name == "xtts":
-                from .tts_xtts import XTTSBackend
-                self._engines[engine_name] = XTTSBackend(device=self.cfg.device)
             elif engine_name == "piper":
                 from .tts_piper import PiperBackend
                 self._engines[engine_name] = PiperBackend()

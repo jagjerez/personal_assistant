@@ -26,11 +26,10 @@ class WhisperConfig(BaseModel):
 
 class TTSConfig(BaseModel):
     """Configuración del motor de TTS (engine-agnostic)."""
-    engine: str = "elevenlabs"   # "elevenlabs" | "xtts" | "piper"
+    engine: str = "elevenlabs"   # "elevenlabs" | "piper"
     voice: str = "21m00Tcm4TlvDq8ikWAM"  # default Rachel (ElevenLabs)
-    device: str = "cuda"         # cuda | cpu (sólo relevante para xtts)
     speed: float = 1.0
-    # ElevenLabs específico — clave API. Si vacío, lee de env ELEVENLABS_API_KEY.
+    # ElevenLabs específico — clave API. Si None, lee de env ELEVENLABS_API_KEY.
     api_key: Optional[str] = None
     elevenlabs_model: str = "eleven_multilingual_v2"
 

@@ -24,21 +24,17 @@ whisper:
 
 tts:
   # Motor TTS:
-  #   - elevenlabs → cloud, mejor calidad, streaming PCM nativo. Necesita API key.
-  #                  https://elevenlabs.io para crear cuenta + key (free tier 10k chars/mes).
-  #   - xtts       → Coqui XTTS-v2 neural local (~1.8GB). Sin internet.
-  #   - piper      → local ligero (~60MB/voz), rápido pero algo robótico.
+  #   - elevenlabs → cloud, mejor calidad, streaming PCM nativo.
+  #     Requiere plan Starter+ ($5/mes) — el free tier no permite API a voces premade.
+  #     Crea tu key en https://elevenlabs.io con TODOS los permisos.
+  #     La key la pones en ~/.config/personal-assistant/secrets.env como:
+  #       ELEVENLABS_API_KEY=tu_clave_aqui
+  #     (NO la pongas en este fichero ni en git)
+  #   - piper → local, gratis, ligero. Voz robótica pero offline.
   engine: elevenlabs
-  # ID del speaker en el catálogo (src/personal_assistant/voices.py).
-  # Cambiable desde el menú del asistente (clic en la barra).
-  voice: 21m00Tcm4TlvDq8ikWAM    # Rachel
-  # Velocidad. 1.0 normal.
+  voice: 21m00Tcm4TlvDq8ikWAM    # Rachel — cambiable desde el menú
   speed: 1.0
-  # ElevenLabs: pon tu key aquí o en la env ELEVENLABS_API_KEY.
-  # api_key: TU_KEY
   elevenlabs_model: eleven_multilingual_v2
-  # Sólo para xtts: cuda | cpu.
-  device: cuda
 
 vad:
   # Sensibilidad: 0 (permisivo) a 3 (estricto).

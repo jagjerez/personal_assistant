@@ -5,6 +5,9 @@ PartOf=graphical-session.target
 
 [Service]
 Type=simple
+# Lee secretos (ej. ELEVENLABS_API_KEY) desde un fichero opcional. Crea tu
+# fichero a mano con `KEY=value` por línea, fuera del repo.
+EnvironmentFile=-%h/.config/personal-assistant/secrets.env
 ExecStart=__VENV_BIN__/assistant
 Restart=on-failure
 RestartSec=3

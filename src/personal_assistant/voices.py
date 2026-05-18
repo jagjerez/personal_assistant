@@ -1,11 +1,8 @@
-"""Catálogo curado de voces (XTTS-v2 y Piper) + descarga on-demand.
+"""Catálogo curado de voces (ElevenLabs + Piper) + descarga on-demand.
 
 Engines:
-- "xtts": Coqui XTTS-v2 (~1.8GB). Multilingüe (16 idiomas), calidad casi humana.
-  Cada speaker habla CUALQUIER idioma: el lang se pasa en cada síntesis.
-  Soporta voice cloning con un wav de ~6s (no expuesto aún en UI).
-- "piper": modelo ligero (~60MB por voz). Calidad estable pero algo robótica.
-  Una voz = un idioma. Útil como fallback rápido.
+- "elevenlabs": neural cloud. Mejor calidad. Necesita API key + plan Starter+.
+- "piper": local ligero (~60MB por voz). Voz robótica pero offline y gratis.
 """
 from __future__ import annotations
 
@@ -53,23 +50,7 @@ VOICES: list[Voice] = [
     Voice("pNInz6obpgDQGcFmaJgB", "elevenlabs", "Adam — neural cloud (hombre)",    "*", "*", "M"),
     Voice("yoZ06aMxZJJ28mfd3POQ", "elevenlabs", "Sam — neural cloud (hombre)",     "*", "*", "M"),
 
-    # ───── XTTS-v2 (neural, multilingüe) ─────
-    # Mujeres
-    Voice("Ana Florence",     "xtts", "Ana Florence — neural multilingüe",     "*", "*", "F"),
-    Voice("Sofia Hellen",     "xtts", "Sofia Hellen — neural multilingüe",     "*", "*", "F"),
-    Voice("Daisy Studious",   "xtts", "Daisy Studious — neural multilingüe",   "*", "*", "F"),
-    Voice("Claribel Dervla",  "xtts", "Claribel Dervla — neural multilingüe",  "*", "*", "F"),
-    Voice("Alison Dietlinde", "xtts", "Alison Dietlinde — neural multilingüe", "*", "*", "F"),
-    Voice("Annmarie Nele",    "xtts", "Annmarie Nele — neural multilingüe",    "*", "*", "F"),
-    Voice("Tammie Ema",       "xtts", "Tammie Ema — neural multilingüe",       "*", "*", "F"),
-    # Hombres
-    Voice("Damien Black",     "xtts", "Damien Black — neural multilingüe",     "*", "*", "M"),
-    Voice("Royston Min",      "xtts", "Royston Min — neural multilingüe",      "*", "*", "M"),
-    Voice("Andrew Chipper",   "xtts", "Andrew Chipper — neural multilingüe",   "*", "*", "M"),
-    Voice("Viktor Eka",       "xtts", "Viktor Eka — neural multilingüe",       "*", "*", "M"),
-    Voice("Gilberto Mathias", "xtts", "Gilberto Mathias — neural multilingüe", "*", "*", "M"),
-
-    # ───── PIPER (ligero, fallback) ─────
+    # ───── PIPER (local ligero, fallback offline) ─────
     Voice("es_ES-sharvard-medium", "piper", "Sharvard (Mujer ES) — piper", "es", "es_ES", "F",
           "es/es_ES/sharvard/medium/es_ES-sharvard-medium"),
     Voice("es_ES-mls_9972-low",    "piper", "MLS (Mujer ES) — piper", "es", "es_ES", "F",
@@ -112,12 +93,9 @@ def piper_voice_path(voice_id: str) -> Path:
 
 
 def is_downloaded(voice: Voice) -> bool:
-    """ElevenLabs es cloud → siempre 'disponible'. XTTS y Piper local."""
+    """ElevenLabs es cloud → siempre 'disponible'. Piper se valida fichero a fichero."""
     if voice.engine == "elevenlabs":
         return True
-    if voice.engine == "xtts":
-        from .tts_xtts import is_xtts_downloaded
-        return is_xtts_downloaded()
     p = piper_voice_path(voice.id)
     return p.exists() and p.with_suffix(".onnx.json").exists()
 
@@ -126,10 +104,6 @@ def download_voice(voice: Voice) -> None:
     """Descarga la voz si no está. Síncrono — usar desde QThread o run_in_executor."""
     if voice.engine == "elevenlabs":
         return  # cloud, no hay nada que descargar
-    if voice.engine == "xtts":
-        from .tts_xtts import ensure_xtts_model
-        ensure_xtts_model()
-        return
 
     target_dir = voice_dir()
     target_dir.mkdir(parents=True, exist_ok=True)

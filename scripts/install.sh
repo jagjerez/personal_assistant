@@ -72,25 +72,18 @@ bold "[4/6] Dependencias Python"
 uv pip install -e . >/dev/null
 ok "Paquete personal-assistant instalado"
 
-# Detectar GPU NVIDIA y ofrecer CUDA + torch compatible
+# Detectar GPU NVIDIA y ofrecer CUDA libs para acelerar Whisper
 if command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L | grep -q GPU; then
   echo "  GPU NVIDIA detectada:"
   nvidia-smi -L | sed 's/^/    /'
-  read -rp "  ¿Instalar libs CUDA + torch cu121 para Whisper y XTTS? [Y/n] " ans
+  read -rp "  ¿Instalar libs CUDA para Whisper en GPU? [Y/n] " ans
   ans=${ans:-Y}
   if [[ "$ans" =~ ^[Yy]$ ]]; then
     uv pip install "nvidia-cublas-cu12" "nvidia-cudnn-cu12>=9.0,<10" >/dev/null
-    # torch 2.5.1 + cu121 funciona en Pascal (GTX 10xx) y posteriores.
-    # cu126/13 dropean Pascal.
-    uv pip install "torch==2.5.1" "torchaudio==2.5.1" \
-      --index-url https://download.pytorch.org/whl/cu121 >/dev/null
-    ok "Libs CUDA + torch (CUDA 12.1) instaladas"
+    ok "Libs CUDA instaladas. Activa Whisper GPU con whisper.device: cuda"
   fi
 else
-  echo "  Sin GPU NVIDIA detectada. Instalando torch CPU para XTTS..."
-  uv pip install torch torchaudio --index-url https://download.pytorch.org/whl/cpu >/dev/null
-  warn "TTS XTTS-v2 funcionará en CPU (latencia 5-10s por respuesta)"
-  warn "Para mejor rendimiento, cambia a engine: piper en config.yaml"
+  echo "  Sin GPU NVIDIA detectada. Whisper irá en CPU."
 fi
 
 # 5) Configuración usuario
