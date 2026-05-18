@@ -10,9 +10,9 @@ dependencies = [
     "webrtcvad-wheels>=2.0.14",
     "faster-whisper>=1.0.3",
     "piper-tts>=1.2.0",
-    "coqui-tts[codec]>=0.24.2",
+    "elevenlabs>=1.10",
+    "coqui-tts[codec]>=0.24.2",   # fallback opcional XTTS-v2
     # coqui-tts no se lleva bien con transformers 5.x ni con torch 2.10+ aún.
-    # Pasamos versiones explícitas para evitar mismatches.
     "transformers>=4.45,<5.0",
     # Nota: torch se instala APARTE con --index-url para forzar CUDA 12.1
     # (CUDA 13 dropea Pascal — GTX 10xx). Ver scripts/install.sh.

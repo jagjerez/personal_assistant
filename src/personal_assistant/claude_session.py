@@ -3,7 +3,7 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Optional
+from typing import AsyncIterator, Optional
 
 from .config import ClaudeConfig
 from .memory import Memory
@@ -37,6 +37,97 @@ class ClaudeSession:
                          int(100 * self.cumulative_tokens / self.cfg.max_context_tokens))
                 await self._rotate()
         return response
+
+    async def ask_stream(self, prompt: str) -> AsyncIterator[str]:
+        """Streamea chunks de texto a medida que Claude los genera.
+
+        Usa --include-partial-messages para recibir text_delta events.
+        Si por algún motivo no hay deltas, cae a emitir el mensaje completo al final.
+        """
+        args = [
+            self.cfg.command,
+            "-p", prompt,
+            "--output-format", "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--append-system-prompt", self.system_prompt,
+        ]
+        if self.cfg.dangerously_skip_permissions:
+            args.append("--dangerously-skip-permissions")
+        if self.cfg.model:
+            args += ["--model", self.cfg.model]
+        if self.session_id:
+            args += ["--resume", self.session_id]
+        else:
+            new_id = str(uuid.uuid4())
+            args += ["--session-id", new_id]
+            self.session_id = new_id
+
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+
+        emitted_any = False
+        fallback_text = ""
+        total_tokens: Optional[int] = None
+
+        assert proc.stdout is not None
+        async for raw in proc.stdout:
+            line = raw.decode("utf-8", errors="replace").strip()
+            if not line:
+                continue
+            try:
+                msg = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            mtype = msg.get("type")
+            # Init: capturar session_id si Claude lo asignó él
+            if mtype == "system" and msg.get("subtype") == "init":
+                sid = msg.get("session_id")
+                if sid:
+                    self.session_id = sid
+            # Streaming partial: text_delta dentro de content_block_delta
+            elif mtype == "stream_event":
+                event = msg.get("event", {})
+                if event.get("type") == "content_block_delta":
+                    delta = event.get("delta", {})
+                    if delta.get("type") == "text_delta":
+                        text = delta.get("text", "")
+                        if text:
+                            emitted_any = True
+                            yield text
+            # Mensaje completo (no partial) — fallback si no llegan deltas
+            elif mtype == "assistant" and not emitted_any:
+                for block in msg.get("message", {}).get("content", []):
+                    if block.get("type") == "text":
+                        fallback_text += block.get("text", "")
+            elif mtype == "result":
+                usage = msg.get("usage", {})
+                total_tokens = (
+                    usage.get("input_tokens", 0)
+                    + usage.get("cache_creation_input_tokens", 0)
+                    + usage.get("cache_read_input_tokens", 0)
+                    + usage.get("output_tokens", 0)
+                )
+                if not emitted_any and msg.get("result"):
+                    fallback_text = msg["result"]
+
+        await proc.wait()
+
+        # Si nunca emitimos deltas, soltar el texto completo de golpe
+        if not emitted_any and fallback_text:
+            yield fallback_text
+
+        # Actualizar contador de tokens y considerar rotación
+        if total_tokens:
+            self.cumulative_tokens = max(self.cumulative_tokens, total_tokens)
+            threshold = int(self.cfg.max_context_tokens * self.cfg.context_threshold)
+            if self.cumulative_tokens > threshold and not self._rotating:
+                log.info("Contexto al %d%% — rotando sesión",
+                         int(100 * self.cumulative_tokens / self.cfg.max_context_tokens))
+                await self._rotate()
 
     async def _raw_call(
         self, prompt: str, resume: Optional[str]

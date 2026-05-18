@@ -38,8 +38,21 @@ class Voice:
         return f"{PIPER_BASE}/{self.rel_path}.onnx.json"
 
 
-# Catálogo curado. XTTS speakers son multilingües; Piper son por idioma.
+# Catálogo curado por engine.
 VOICES: list[Voice] = [
+    # ───── ElevenLabs (neural cloud, multilingüe v2) ─────
+    # IDs de voces "premade" estables. Modelo eleven_multilingual_v2 hace cualquier idioma.
+    Voice("21m00Tcm4TlvDq8ikWAM", "elevenlabs", "Rachel — neural cloud (mujer)",   "*", "*", "F"),
+    Voice("EXAVITQu4vr4xnSDxMaL", "elevenlabs", "Bella — neural cloud (mujer)",    "*", "*", "F"),
+    Voice("MF3mGyEYCl7XYWbV9V6O", "elevenlabs", "Elli — neural cloud (mujer)",     "*", "*", "F"),
+    Voice("AZnzlk1XvdvUeBnXmlld", "elevenlabs", "Domi — neural cloud (mujer)",     "*", "*", "F"),
+    Voice("XB0fDUnXU5powFXDhCwa", "elevenlabs", "Charlotte — neural cloud (mujer)","*", "*", "F"),
+    Voice("ThT5KcBeYPX3keUQqHPh", "elevenlabs", "Dorothy — neural cloud (mujer)",  "*", "*", "F"),
+    Voice("ErXwobaYiN019PkySvjV", "elevenlabs", "Antoni — neural cloud (hombre)",  "*", "*", "M"),
+    Voice("VR6AewLTigWG4xSOukaG", "elevenlabs", "Arnold — neural cloud (hombre)",  "*", "*", "M"),
+    Voice("pNInz6obpgDQGcFmaJgB", "elevenlabs", "Adam — neural cloud (hombre)",    "*", "*", "M"),
+    Voice("yoZ06aMxZJJ28mfd3POQ", "elevenlabs", "Sam — neural cloud (hombre)",     "*", "*", "M"),
+
     # ───── XTTS-v2 (neural, multilingüe) ─────
     # Mujeres
     Voice("Ana Florence",     "xtts", "Ana Florence — neural multilingüe",     "*", "*", "F"),
@@ -99,7 +112,9 @@ def piper_voice_path(voice_id: str) -> Path:
 
 
 def is_downloaded(voice: Voice) -> bool:
-    """XTTS asume bundle ya descargado. Piper se valida fichero a fichero."""
+    """ElevenLabs es cloud → siempre 'disponible'. XTTS y Piper local."""
+    if voice.engine == "elevenlabs":
+        return True
     if voice.engine == "xtts":
         from .tts_xtts import is_xtts_downloaded
         return is_xtts_downloaded()
@@ -109,6 +124,8 @@ def is_downloaded(voice: Voice) -> bool:
 
 def download_voice(voice: Voice) -> None:
     """Descarga la voz si no está. Síncrono — usar desde QThread o run_in_executor."""
+    if voice.engine == "elevenlabs":
+        return  # cloud, no hay nada que descargar
     if voice.engine == "xtts":
         from .tts_xtts import ensure_xtts_model
         ensure_xtts_model()

@@ -1,8 +1,4 @@
-"""Dispatcher TTS: enruta a XTTS o Piper según la voz seleccionada.
-
-Cada engine se carga lazy (la primera vez que se usa). En arranque sólo se
-inicializa el engine de la voz configurada para no descargar/cargar todo.
-"""
+"""Dispatcher TTS: enruta a ElevenLabs, XTTS o Piper según la voz seleccionada."""
 from __future__ import annotations
 
 import asyncio
@@ -23,11 +19,15 @@ class TTS:
         self.current_voice: Voice | None = None
         self.set_voice(cfg.voice)
 
-    # ---- Engines (lazy load) ----
-
     def _engine(self, engine_name: str):
         if engine_name not in self._engines:
-            if engine_name == "xtts":
+            if engine_name == "elevenlabs":
+                from .tts_elevenlabs import ElevenLabsBackend
+                self._engines[engine_name] = ElevenLabsBackend(
+                    api_key=self.cfg.api_key,
+                    model=self.cfg.elevenlabs_model,
+                )
+            elif engine_name == "xtts":
                 from .tts_xtts import XTTSBackend
                 self._engines[engine_name] = XTTSBackend(device=self.cfg.device)
             elif engine_name == "piper":
@@ -37,14 +37,11 @@ class TTS:
                 raise ValueError(f"Engine desconocido: {engine_name}")
         return self._engines[engine_name]
 
-    # ---- API pública ----
-
     def set_voice(self, voice_id: str) -> None:
         v = get_voice(voice_id)
         if v is None:
             raise ValueError(f"Voz desconocida en catálogo: {voice_id}")
         self.current_voice = v
-        # Forzar carga del engine para fallar pronto si hay problema
         self._engine(v.engine)
         log.info("Voz activa: %s (%s)", v.name, v.engine)
 

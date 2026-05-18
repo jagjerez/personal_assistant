@@ -24,17 +24,21 @@ whisper:
 
 tts:
   # Motor TTS:
-  #   - xtts  → Coqui XTTS-v2 neural. Calidad casi humana, multilingüe. ~1.8GB,
-  #             más lento (1-3s GPU / 5-10s CPU para 3s de audio).
-  #   - piper → ligero (~60MB/voz), rápido (<1s), pero algo robótico.
-  engine: xtts
+  #   - elevenlabs → cloud, mejor calidad, streaming PCM nativo. Necesita API key.
+  #                  https://elevenlabs.io para crear cuenta + key (free tier 10k chars/mes).
+  #   - xtts       → Coqui XTTS-v2 neural local (~1.8GB). Sin internet.
+  #   - piper      → local ligero (~60MB/voz), rápido pero algo robótico.
+  engine: elevenlabs
   # ID del speaker en el catálogo (src/personal_assistant/voices.py).
-  # Cambiable desde el menú del asistente (clic en la barra) sin reiniciar.
-  voice: Ana Florence
-  # Device de XTTS (cuda | cpu). Piper ignora este flag.
-  device: cuda
-  # 1.0 normal, <1.0 más rápido, >1.0 más lento.
+  # Cambiable desde el menú del asistente (clic en la barra).
+  voice: 21m00Tcm4TlvDq8ikWAM    # Rachel
+  # Velocidad. 1.0 normal.
   speed: 1.0
+  # ElevenLabs: pon tu key aquí o en la env ELEVENLABS_API_KEY.
+  # api_key: TU_KEY
+  elevenlabs_model: eleven_multilingual_v2
+  # Sólo para xtts: cuda | cpu.
+  device: cuda
 
 vad:
   # Sensibilidad: 0 (permisivo) a 3 (estricto).

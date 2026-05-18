@@ -26,10 +26,13 @@ class WhisperConfig(BaseModel):
 
 class TTSConfig(BaseModel):
     """Configuración del motor de TTS (engine-agnostic)."""
-    engine: str = "xtts"        # "xtts" | "piper"
-    voice: str = "Ana Florence"  # ID del catálogo voices.py
+    engine: str = "elevenlabs"   # "elevenlabs" | "xtts" | "piper"
+    voice: str = "21m00Tcm4TlvDq8ikWAM"  # default Rachel (ElevenLabs)
     device: str = "cuda"         # cuda | cpu (sólo relevante para xtts)
-    speed: float = 1.0           # 1.0 normal, <1 más rápido, >1 más lento
+    speed: float = 1.0
+    # ElevenLabs específico — clave API. Si vacío, lee de env ELEVENLABS_API_KEY.
+    api_key: Optional[str] = None
+    elevenlabs_model: str = "eleven_multilingual_v2"
 
 
 class VADConfig(BaseModel):
