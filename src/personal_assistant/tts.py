@@ -56,10 +56,28 @@ class TTS:
         if v is None or not text.strip():
             return
         engine = self._engine(v.engine)
-        await engine.speak(
-            text, v.id, language=self.language,
-            speed=self.cfg.speed, cancel_event=cancel_event,
-        )
+        try:
+            await engine.speak(
+                text, v.id, language=self.language,
+                speed=self.cfg.speed, cancel_event=cancel_event,
+            )
+        except Exception as e:
+            # Auto-fallback a la voz local si el engine cloud falla
+            # (créditos agotados, 402, 401, red caída, etc.).
+            if v.engine != "piper" and self.cfg.fallback_voice:
+                fb = get_voice(self.cfg.fallback_voice)
+                if fb and fb.engine == "piper":
+                    log.warning(
+                        "Engine %s falló (%s) — cayendo a voz local %s",
+                        v.engine, type(e).__name__, fb.id,
+                    )
+                    piper = self._engine("piper")
+                    await piper.speak(
+                        text, fb.id, language=self.language,
+                        speed=self.cfg.speed, cancel_event=cancel_event,
+                    )
+                    return
+            raise
 
     def play_demo(self, text: str, voice_id: str, language: Optional[str] = None) -> None:
         v = get_voice(voice_id)

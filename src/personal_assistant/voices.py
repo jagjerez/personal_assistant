@@ -38,18 +38,14 @@ class Voice:
 
 # Catálogo curado por engine.
 VOICES: list[Voice] = [
-    # ───── ElevenLabs (neural cloud, multilingüe v2) ─────
-    # IDs de voces "premade" estables. Modelo eleven_multilingual_v2 hace cualquier idioma.
-    Voice("21m00Tcm4TlvDq8ikWAM", "elevenlabs", "Rachel — neural cloud (mujer)",   "*", "*", "F"),
-    Voice("EXAVITQu4vr4xnSDxMaL", "elevenlabs", "Bella — neural cloud (mujer)",    "*", "*", "F"),
-    Voice("MF3mGyEYCl7XYWbV9V6O", "elevenlabs", "Elli — neural cloud (mujer)",     "*", "*", "F"),
-    Voice("AZnzlk1XvdvUeBnXmlld", "elevenlabs", "Domi — neural cloud (mujer)",     "*", "*", "F"),
-    Voice("XB0fDUnXU5powFXDhCwa", "elevenlabs", "Charlotte — neural cloud (mujer)","*", "*", "F"),
-    Voice("ThT5KcBeYPX3keUQqHPh", "elevenlabs", "Dorothy — neural cloud (mujer)",  "*", "*", "F"),
-    Voice("ErXwobaYiN019PkySvjV", "elevenlabs", "Antoni — neural cloud (hombre)",  "*", "*", "M"),
-    Voice("VR6AewLTigWG4xSOukaG", "elevenlabs", "Arnold — neural cloud (hombre)",  "*", "*", "M"),
-    Voice("pNInz6obpgDQGcFmaJgB", "elevenlabs", "Adam — neural cloud (hombre)",    "*", "*", "M"),
-    Voice("yoZ06aMxZJJ28mfd3POQ", "elevenlabs", "Sam — neural cloud (hombre)",     "*", "*", "M"),
+    # ───── ElevenLabs (voces "default Eleven", accesibles en plan FREE con modelo Flash) ─────
+    Voice("FGY2WhTYpPnrIDTdsKH5", "elevenlabs", "Laura — neural cloud (mujer)",    "*", "*", "F"),
+    Voice("XrExE9yKIg1WjnnlVkGX", "elevenlabs", "Matilda — neural cloud (mujer)",  "*", "*", "F"),
+    Voice("Xb7hH8MSUJpSbSDYk0k2", "elevenlabs", "Alice — neural cloud (mujer)",    "*", "*", "F"),
+    Voice("cgSgspJ2msm6clMCkdW9", "elevenlabs", "Jessica — neural cloud (mujer)",  "*", "*", "F"),
+    Voice("CwhRBWXzGAHq8TQ4Fs17", "elevenlabs", "Roger — neural cloud (hombre)",   "*", "*", "M"),
+    Voice("nPczCjzI2devNBz1zQrb", "elevenlabs", "Brian — neural cloud (hombre)",   "*", "*", "M"),
+    Voice("JBFqnCBsd6RMkjVDRZzb", "elevenlabs", "George — neural cloud (hombre)",  "*", "*", "M"),
 
     # ───── OpenAI TTS (neural cloud, pay-as-you-go) ─────
     Voice("nova",    "openai", "Nova — neural OpenAI (mujer, popular)",    "*", "*", "F"),

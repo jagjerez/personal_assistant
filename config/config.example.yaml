@@ -24,20 +24,18 @@ whisper:
 
 tts:
   # Motor TTS:
-  #   - openai → cloud, calidad excelente, pay-as-you-go (~$0.015 por 1000 chars).
-  #     Necesita OPENAI_API_KEY en ~/.config/personal-assistant/secrets.env.
-  #     Voces: nova, shimmer, alloy, coral, sage, echo, onyx, fable, ash.
-  #   - elevenlabs → cloud, top calidad. Requiere plan Starter+ ($5/mes).
-  #     Free tier NO funciona — la API rechaza voces premade.
-  #     Necesita ELEVENLABS_API_KEY en secrets.env.
+  #   - elevenlabs → cloud. Con modelo eleven_flash_v2_5 funciona en plan FREE
+  #     usando voces "default Eleven" (Laura, Matilda, Alice, Roger, Brian, etc.).
+  #     Voces "library" antiguas (Rachel, Bella) requieren Starter+.
+  #   - openai → cloud, pay-as-you-go (~$0.015/1k chars).
   #   - piper → local gratis. Voz robótica pero offline.
-  engine: openai
-  voice: nova
+  engine: elevenlabs
+  voice: FGY2WhTYpPnrIDTdsKH5     # Laura (free-tier friendly)
   speed: 1.0
-  # ElevenLabs config (engine=elevenlabs)
-  elevenlabs_model: eleven_multilingual_v2
-  # OpenAI config (engine=openai)
-  openai_model: tts-1            # tts-1 rápido | tts-1-hd mejor calidad
+  elevenlabs_model: eleven_flash_v2_5
+  openai_model: tts-1
+  # Si el engine cloud falla (créditos, 402, red), cae a esta voz Piper local.
+  fallback_voice: es_ES-sharvard-medium
 
 vad:
   # Sensibilidad: 0 (permisivo) a 3 (estricto).

@@ -26,15 +26,20 @@ class WhisperConfig(BaseModel):
 
 class TTSConfig(BaseModel):
     """Configuración del motor de TTS (engine-agnostic)."""
-    engine: str = "openai"   # "elevenlabs" | "openai" | "piper"
-    voice: str = "nova"      # default Nova (OpenAI). Cambiable desde el menú.
+    engine: str = "elevenlabs"
+    voice: str = "FGY2WhTYpPnrIDTdsKH5"   # default Laura (free-tier friendly)
     speed: float = 1.0
     # ElevenLabs. Si None, lee de env ELEVENLABS_API_KEY.
     api_key: Optional[str] = None
-    elevenlabs_model: str = "eleven_multilingual_v2"
+    # eleven_flash_v2_5 funciona en plan FREE con voces "default Eleven".
+    # eleven_multilingual_v2 requiere Starter+ para voces premade.
+    elevenlabs_model: str = "eleven_flash_v2_5"
     # OpenAI. Si None, lee de env OPENAI_API_KEY.
     openai_api_key: Optional[str] = None
-    openai_model: str = "tts-1"   # tts-1 rápido / tts-1-hd mejor calidad
+    openai_model: str = "tts-1"
+    # Si el engine cloud falla (sin créditos, 402, red caída...), intenta esta voz
+    # local en su lugar. None = sin fallback (sólo log de error).
+    fallback_voice: Optional[str] = "es_ES-sharvard-medium"
 
 
 class VADConfig(BaseModel):
