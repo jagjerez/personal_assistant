@@ -52,12 +52,13 @@ class Overlay(QWidget):
 
         # Ventana siempre visible, sin foco, encima de todo.
         # OJO: NO usamos WA_TransparentForMouseEvents → queremos clicks para abrir menú.
+        # X11Bypass + Tool + StaysOnTop = el WM no lo reordena ni añade decoración.
         self.setWindowFlags(
             Qt.FramelessWindowHint
             | Qt.WindowStaysOnTopHint
             | Qt.Tool
             | Qt.WindowDoesNotAcceptFocus
-            | Qt.BypassWindowManagerHint
+            | Qt.X11BypassWindowManagerHint
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setAttribute(Qt.WA_ShowWithoutActivating)
@@ -74,7 +75,14 @@ class Overlay(QWidget):
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick)
         self._timer.setInterval(33)
-        self._timer.start()  # siempre activo: idle bar tiene su micro-shimmer
+        self._timer.start()
+
+        # Re-raise periódico: algunos compositores nos pierden el always-on-top
+        # cuando lanzan una ventana fullscreen o cambian de workspace.
+        self._raise_timer = QTimer(self)
+        self._raise_timer.timeout.connect(self._ensure_on_top)
+        self._raise_timer.setInterval(2000)
+        self._raise_timer.start()
 
         # Animación de transición entre estados
         self._trans_anim = QPropertyAnimation(self, b"transition")
@@ -124,6 +132,13 @@ class Overlay(QWidget):
 
     def _on_level(self, level: float) -> None:
         self._target_level = max(0.0, min(1.0, level))
+
+    def _ensure_on_top(self) -> None:
+        """Reposiciona y eleva la ventana periódicamente."""
+        if not self.isVisible():
+            self.show()
+        self._position_bottom_center()
+        self.raise_()
 
     def _tick(self) -> None:
         self._phase += 0.06

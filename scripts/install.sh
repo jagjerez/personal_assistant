@@ -96,6 +96,15 @@ fi
 
 bash "${PROJECT_DIR}/scripts/install-models.sh"
 
+# Bloquear Super+X para que otras apps no lo reciban (sólo GNOME)
+if command -v gsettings >/dev/null 2>&1 && pgrep -x gnome-shell >/dev/null 2>&1; then
+  read -rp "  ¿Registrar Super+X como atajo en GNOME (evita propagación a apps)? [Y/n] " ans
+  ans=${ans:-Y}
+  if [[ "$ans" =~ ^[Yy]$ ]]; then
+    bash "${PROJECT_DIR}/scripts/register-hotkey.sh"
+  fi
+fi
+
 # 6) systemd user service (autostart)
 bold "[6/6] Servicio systemd (autostart al iniciar sesión)"
 mkdir -p "${SYSTEMD_DIR}"

@@ -12,7 +12,15 @@ import sys
 import threading
 from pathlib import Path
 
-# Silencia warnings ruidosos de Qt en Wayland (antes del primer import de PySide6).
+# Wayland (GNOME, KDE, ...) NO permite a los clientes posicionar sus ventanas ni
+# forzar always-on-top — limitación de seguridad. Forzamos XWayland para que Qt
+# use el protocolo X11 a través de la capa de traducción de Wayland (siempre
+# disponible en sesiones Wayland modernas). Resultado: el overlay aparece
+# exactamente donde lo pedimos y sobre todas las ventanas.
+if os.environ.get("XDG_SESSION_TYPE") == "wayland":
+    os.environ.setdefault("QT_QPA_PLATFORM", "xcb")
+
+# Silencia warnings ruidosos de Qt (antes del primer import de PySide6).
 os.environ.setdefault(
     "QT_LOGGING_RULES",
     "qt.qpa.theme.*=false;qt.qpa.wayland.*=false;qt.qpa.xcb.*=false",
