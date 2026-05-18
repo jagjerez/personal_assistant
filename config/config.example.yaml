@@ -1,0 +1,80 @@
+# Asistente personal — configuración
+# Copia este archivo a ~/.config/personal-assistant/config.yaml
+
+hotkey:
+  # Tecla para activar/cancelar grabación.
+  # Combinación: <modifier> + <key>
+  # Nombres válidos: ver /usr/include/linux/input-event-codes.h (sin prefijo KEY_)
+  modifier: LEFTMETA   # tecla Windows / Super
+  key: X
+  # Opcional: ruta concreta a /dev/input/eventN. Si null, auto-detecta teclados.
+  device: null
+
+whisper:
+  # Modelos: tiny, base, small, medium, large-v3
+  # medium = buen balance calidad/velocidad en español.
+  model: medium
+  language: es
+  # device: cpu | cuda | auto.
+  # Para GPU NVIDIA: `uv pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`
+  # compute_type para GPU:
+  #   - 'int8'         → Pascal (GTX 10xx), Maxwell. Sin tensor cores.
+  #   - 'int8_float16' → Turing+ (RTX 20xx+). Con tensor cores.
+  #   - 'float16'      → RTX/Ampere/Ada. Sólo si la GPU soporta FP16 nativo.
+  device: cpu
+  compute_type: int8
+
+piper:
+  # Ruta al modelo de voz .onnx. Por defecto sharvard (mujer ES).
+  # Cambia desde el menú del asistente (clic en la barra) o aquí a mano.
+  voice_path: ~/.local/share/personal-assistant/voices/es_ES-sharvard-medium.onnx
+  # Velocidad de habla (1.0 = normal, <1 más rápido, >1 más lento)
+  length_scale: 1.0
+
+vad:
+  # Sensibilidad: 0 (permisivo) a 3 (estricto).
+  # 2 funciona bien en habitaciones normales.
+  aggressiveness: 2
+  # Milisegundos de silencio para considerar fin de habla.
+  silence_duration_ms: 1500
+  # Sample rate fijo a 16kHz (requerido por webrtcvad).
+  sample_rate: 16000
+  # Tiempo máximo de grabación absoluto (segundos).
+  max_duration_s: 30
+
+claude:
+  command: claude
+  # Al superar este % del contexto, se resume y rota la sesión.
+  context_threshold: 0.75
+  # Límite aproximado del modelo en tokens.
+  max_context_tokens: 200000
+  # Modelo a usar (alias o nombre completo). null = usa el default.
+  model: null
+  # Idioma en que el asistente debe responder (también afecta a Whisper STT).
+  language: es
+  # ⚠ Si True, Claude se ejecuta con --dangerously-skip-permissions:
+  # puede ejecutar comandos, editar ficheros, etc. SIN pedir confirmación.
+  # Necesario si quieres pedirle tareas por voz que toquen el sistema.
+  # Riesgo: cualquier voz interpretada como instrucción destructiva se ejecuta.
+  dangerously_skip_permissions: false
+
+paths:
+  personality_file: ~/.config/personal-assistant/personality.md
+  memory_file: ~/.config/personal-assistant/memory.md
+  log_dir: ~/.local/state/personal-assistant
+  session_dir: ~/.local/state/personal-assistant/sessions
+
+audio:
+  # Sonido feedback al iniciar/parar grabación (true = beep corto).
+  beep: true
+
+overlay:
+  # Barra flotante con animaciones de estado (mic / thinking / waveform).
+  enabled: true
+  # Margen desde el borde inferior de la pantalla, en píxeles.
+  margin_bottom: 60
+  # Anchura y altura de la barra.
+  width: 320
+  height: 70
+  # Opacidad (0.0 transparente, 1.0 opaco).
+  opacity: 0.92

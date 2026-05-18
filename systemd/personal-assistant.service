@@ -1,0 +1,16 @@
+[Unit]
+Description=Personal voice assistant (Whisper + Claude Code + Piper)
+After=graphical-session.target sound.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=__VENV_BIN__/assistant
+Restart=on-failure
+RestartSec=3
+# Limita reinicios en bucle si revienta sistemáticamente
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Install]
+WantedBy=graphical-session.target
