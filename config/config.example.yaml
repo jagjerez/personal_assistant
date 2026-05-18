@@ -16,11 +16,9 @@ whisper:
   model: medium
   language: es
   # device: cpu | cuda | auto.
-  # Para GPU NVIDIA: `uv pip install nvidia-cublas-cu12 nvidia-cudnn-cu12`
-  # compute_type para GPU:
-  #   - 'int8'         → Pascal (GTX 10xx), Maxwell. Sin tensor cores.
-  #   - 'int8_float16' → Turing+ (RTX 20xx+). Con tensor cores.
-  #   - 'float16'      → RTX/Ampere/Ada. Sólo si la GPU soporta FP16 nativo.
+  # ⚠ Si usas tts.engine: xtts con GPU de <8GB, deja Whisper en CPU.
+  # XTTS-v2 ocupa ~2.5-3GB VRAM. Whisper medium otros 1.5GB. No caben juntos.
+  # Whisper CPU int8 va a ~1-2s en frases cortas, suficiente para voz.
   device: cpu
   compute_type: int8
 

@@ -118,6 +118,14 @@ class XTTSBackend:
         except Exception:
             log.exception("Error sintetizando con XTTS")
             return np.zeros(0, dtype=np.float32)
+        finally:
+            # Reduce fragmentación de VRAM entre síntesis.
+            if self.device == "cuda":
+                try:
+                    import torch
+                    torch.cuda.empty_cache()
+                except Exception:
+                    pass
 
     def _play(self, samples: np.ndarray, cancel_event: Optional[asyncio.Event]) -> None:
         sd.play(samples, self.sample_rate)

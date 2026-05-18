@@ -18,8 +18,10 @@ class HotkeyConfig(BaseModel):
 class WhisperConfig(BaseModel):
     model: str = "medium"
     language: str = "es"
-    device: str = "cpu"           # cpu | cuda | auto
-    compute_type: str = "int8"     # int8 (cpu), float16 (gpu), float32
+    # cpu | cuda. Recomendado cpu si tu GPU es <8GB y usas tts xtts:
+    # ambos modelos no caben en VRAM simultáneamente.
+    device: str = "cpu"
+    compute_type: str = "int8"     # int8 (cpu), float16/int8_float16 (gpu)
 
 
 class TTSConfig(BaseModel):
